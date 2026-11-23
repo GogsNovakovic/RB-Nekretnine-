@@ -67,7 +67,7 @@ export default function BuildingViewer() {
         <header className="pointer-events-none absolute left-4 right-4 top-4 sm:right-auto sm:max-w-sm">
           <div className="pointer-events-auto rounded-xl bg-black/35 px-4 py-3 shadow-lg backdrop-blur-md ring-1 ring-white/15">
             <h1 className="text-base font-semibold leading-tight sm:text-lg">Residential building — exterior</h1>
-            <p className="mt-1 text-xs leading-relaxed text-white/80 sm:text-[13px]">
+            <p className="mt-1 text-xs leading-relaxed text-white/80 sm:text-[13px] [@media(max-height:500px)]:hidden">
               Procedural 3D reconstruction from the five reference renders. Dimensions are estimated from perspective, not survey data.
             </p>
           </div>
@@ -77,9 +77,9 @@ export default function BuildingViewer() {
       {showUi && (
         <nav
           aria-label="Camera views"
-          className="absolute bottom-4 left-4 right-4 flex flex-col items-center gap-2 sm:left-1/2 sm:right-auto sm:-translate-x-1/2"
+          className="pointer-events-none absolute bottom-4 left-4 right-4 flex flex-col items-center gap-2"
         >
-          <div className="flex max-w-full flex-wrap justify-center gap-1 rounded-xl bg-black/35 p-1 shadow-lg backdrop-blur-md ring-1 ring-white/15">
+          <div className="pointer-events-auto flex max-w-full flex-wrap justify-center gap-1 rounded-xl bg-black/35 p-1 shadow-lg backdrop-blur-md ring-1 ring-white/15">
             {VIEWS.map((v) => (
               <button
                 key={v.id}
@@ -107,7 +107,8 @@ export default function BuildingViewer() {
             </button>
           </div>
           <p className="rounded-md bg-black/25 px-2 py-1 text-center text-[11px] text-white/85 backdrop-blur-sm sm:text-xs">
-            Drag to orbit and tilt · scroll or pinch to zoom · right-drag or two fingers to pan
+            <span className="hidden sm:inline">Drag to orbit and tilt · scroll to zoom · right-drag to pan</span>
+            <span className="sm:hidden">Drag to orbit · pinch to zoom · two fingers to pan</span>
           </p>
         </nav>
       )}

@@ -112,11 +112,13 @@ export function buildRoof(ctx: Ctx, materials: Materials): THREE.Object3D {
   const mats: THREE.Matrix4[] = [];
   const addRib = (start: THREE.Vector3, d: THREE.Vector3, n: THREE.Vector3, planLen: number, cos: number) => {
     if (planLen < 0.05) return;
-    const len = planLen / cos;
+    const inset = 0.12; // seams stop short of the eaves edge, hidden behind the gutter
+    const len = planLen / cos - inset;
+    if (len < 0.05) return;
     const x = new THREE.Vector3().crossVectors(n, d);
     const m = new THREE.Matrix4().makeBasis(x, n, d);
     m.scale(V(1, 1, len));
-    m.setPosition(start);
+    m.setPosition(start.clone().addScaledVector(d, inset));
     mats.push(m);
   };
   const spacing = 0.5;

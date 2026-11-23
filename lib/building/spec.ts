@@ -10,19 +10,20 @@
  * Image 1 was solved as a level two-point-perspective camera: the two horizontal
  * vanishing points give a focal length of ≈ 0.79 × image width (≈ 28 mm equivalent),
  * and the storey height was taken as 3.0 m to fix the scale. Positions along the
- * façades were then intersected from that camera. Images 2, 3 and 5 were used for
- * the rear, west side and roof, and to cross-check proportions.
+ * front and east façades were then intersected from that camera.
  *
- * Images 2 and 3 were then solved the same way from 11–12 point correspondences
- * each (RMS 5–7 px at 1200 px width); rear elements were located by
- * back-projecting onto known planes and by triangulating between the two views.
+ * Images 2 and 3 (rear corners) were solved as level cameras from 11–12 point
+ * correspondences each (RMS 5–7 px at 1200 px width); both independently give a
+ * depth of ≈ 12.3 m. Rear elements were located by back-projecting onto known
+ * planes and by triangulating between the two views. Image 5 (aerial) was solved
+ * as a tilted camera, which also yields the roof pitch.
  *
- * Measured (± roughly 5 %): façade width, window spacing/sizes, storey heights,
+ * Measured (± roughly 5 %): footprint, window spacing/sizes, storey heights,
  * render/timber line, side-façade bay positions, eaves overhang, rear bay
- * positions and projections, NE portal frame, balcony extents.
- * Assumed (not determinable from the renders): wall thickness, reveal depths, slab
- * thicknesses, roof pitch, exact rear projection depths, chimney sizes, hidden rear
- * details that are occluded in every view. These are documented inline below.
+ * positions and projections, NE portal frame, balcony extents, roof pitch.
+ * Assumed (not determinable from the renders): the absolute scale (3.0 m storey),
+ * wall thickness, reveal depths, slab thicknesses, chimney sizes, and any detail
+ * that is hidden in every view (marked "assumed" inline below).
  */
 
 export const W = 18.0; // main block width (E–W), measured
