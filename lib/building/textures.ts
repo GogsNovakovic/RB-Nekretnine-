@@ -218,42 +218,6 @@ export function pavingTexture(aniso: number): TexturePair {
   return { map: finish(c, 1.6, true, aniso), bump: finish(cb, 1.6, false, aniso), size: 1.6 };
 }
 
-/** Meadow grass: dense short blades, tileable. Tile = 3 m. */
-export function grassTexture(aniso: number): TexturePair {
-  const N = 512;
-  const rand = mulberry32(31);
-  const base = valueNoise(N, 8, rand);
-  const [c, ctx] = makeCanvas(N, N);
-  const img = ctx.createImageData(N, N);
-  for (let i = 0; i < N * N; i++) {
-    const v = base[i];
-    img.data[i * 4] = 58 + v * 26;
-    img.data[i * 4 + 1] = 92 + v * 30;
-    img.data[i * 4 + 2] = 28 + v * 10;
-    img.data[i * 4 + 3] = 255;
-  }
-  ctx.putImageData(img, 0, 0);
-  ctx.lineCap = "round";
-  for (let k = 0; k < 9000; k++) {
-    const x = rand() * N;
-    const y = rand() * N;
-    const len = 4 + rand() * 10;
-    const ang = -Math.PI / 2 + (rand() - 0.5) * 0.9;
-    const l = rand();
-    ctx.strokeStyle = `rgb(${50 + l * 70},${85 + l * 75},${20 + l * 30})`;
-    ctx.lineWidth = 0.8 + rand() * 1.1;
-    for (const dx of [0, -N, N]) {
-      for (const dy of [0, -N, N]) {
-        ctx.beginPath();
-        ctx.moveTo(x + dx, y + dy);
-        ctx.lineTo(x + dx + Math.cos(ang) * len, y + dy + Math.sin(ang) * len);
-        ctx.stroke();
-      }
-    }
-  }
-  return { map: finish(c, 3, true, aniso), size: 3 };
-}
-
 /** Return a clone of a tiling texture with a different real-world tile size. */
 export function rescaled(t: THREE.Texture, size: number, sizeV = size): THREE.Texture {
   const c = t.clone();

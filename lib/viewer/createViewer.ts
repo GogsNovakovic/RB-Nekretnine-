@@ -3,7 +3,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { buildBuilding } from "../building/building";
 import { createMaterials } from "../building/materials";
 import { EAVE_X, EAVE_Z, HD, HW, REAR, SOFFIT_Y, roofHeightAt } from "../building/spec";
-import { createEnvironment, createGround, createLights, createSky, createTreeLine } from "./environment";
+import { createEnvironment, createLights, createShadowCatcher } from "./environment";
 import { MATCH, MatchCamera, VIEWS } from "./views";
 
 export interface Viewer {
@@ -27,12 +27,19 @@ const TARGET_MAX = new THREE.Vector3(7, 9, 5);
 /** Solid volume the camera may not enter (walls + rear projections), below the eaves. */
 const SOLID = { x0: -HW - 0.45, x1: HW - REAR.frame.u0 + 0.4, z0: -HD - REAR.central.projection - REAR.boxBalcony.depth - 0.4, z1: HD + 0.35, y1: SOFFIT_Y + 0.05 };
 
+/** Vertical field of view of the interactive camera (matches the approved opening view). */
+const LENS_FOV = 26.6;
+/** Wider lens on tall phone screens so the building is not a narrow sliver. */
+const PORTRAIT_FOV = 55;
+
 const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
 export function createViewer(container: HTMLElement, opts: ViewerOptions = {}): Viewer {
   const match = opts.match === "custom" ? opts.custom : opts.match ? MATCH[opts.match] : undefined;
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+  // alpha: the canvas is transparent so the page behind it is the background
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+  renderer.setClearColor(0x000000, 0);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
@@ -50,15 +57,12 @@ export function createViewer(container: HTMLElement, opts: ViewerOptions = {}): 
   const scene = new THREE.Scene();
   scene.environment = createEnvironment(renderer);
   scene.environmentIntensity = 0.85;
-  scene.fog = new THREE.Fog("#d9c3a6", 170, 560);
 
   const aniso = Math.min(8, renderer.capabilities.getMaxAnisotropy());
   const materials = createMaterials(aniso);
   const building = buildBuilding(materials);
   scene.add(building);
-  scene.add(createGround(materials.grass));
-  scene.add(createSky());
-  scene.add(createTreeLine());
+  scene.add(createShadowCatcher());
   const { sun, hemi, bounce } = createLights();
   scene.add(sun, sun.target, hemi, bounce, bounce.target);
 
@@ -67,9 +71,10 @@ export function createViewer(container: HTMLElement, opts: ViewerOptions = {}): 
   controls.enableDamping = true;
   controls.dampingFactor = 0.075;
   controls.minDistance = 11;
-  controls.maxDistance = 85;
+  controls.maxDistance = 100;
   controls.minPolarAngle = 0.02;
-  controls.maxPolarAngle = Math.PI / 2 - 0.025;
+  // may look slightly upward (the opening view does); keepOutside() still holds the camera above ground
+  controls.maxPolarAngle = Math.PI / 2 + 0.05;
   controls.rotateSpeed = 0.6;
   controls.zoomSpeed = 0.9;
   controls.panSpeed = 0.7;
@@ -109,8 +114,7 @@ export function createViewer(container: HTMLElement, opts: ViewerOptions = {}): 
     if (match) applyMatch(match, w, h);
     else {
       camera.aspect = w / h;
-      // keep the building comfortably framed on tall phone screens
-      camera.fov = w / h < 0.8 ? 55 : 40;
+      camera.fov = w / h < 0.8 ? PORTRAIT_FOV : LENS_FOV;
       camera.updateProjectionMatrix();
     }
   };
@@ -122,6 +126,16 @@ export function createViewer(container: HTMLElement, opts: ViewerOptions = {}): 
     const v = VIEWS.find((x) => x.id === id) ?? VIEWS[0];
     const p1 = new THREE.Vector3(...v.position);
     const t1 = new THREE.Vector3(...v.target);
+    // Keep the composed framing whatever the lens or screen shape: scale the distance
+    // so the same height fits (and, if refAspect is set, the same width too).
+    const refTan = Math.tan(THREE.MathUtils.degToRad((v.fov ?? LENS_FOV) / 2));
+    const curTan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+    let k = refTan / curTan;
+    if (v.refAspect) k = Math.max(k, (refTan * v.refAspect) / (curTan * camera.aspect));
+    if (Math.abs(k - 1) > 1e-3) {
+      const dist = Math.min(p1.distanceTo(t1) * k, controls.maxDistance);
+      p1.sub(t1).setLength(dist).add(t1);
+    }
     if (!animate) {
       camera.position.copy(p1);
       controls.target.copy(t1);
@@ -136,7 +150,7 @@ export function createViewer(container: HTMLElement, opts: ViewerOptions = {}): 
   if (match) {
     controls.enabled = false;
   } else {
-    setView(opts.initialView ?? "front", false);
+    setView(opts.initialView ?? "start", false);
   }
 
   /** Keep the camera outside walls, roof and ground. */

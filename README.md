@@ -10,8 +10,14 @@ npm run dev        # http://localhost:3000
 ```
 
 **Controls:** drag to orbit and tilt, scroll or pinch to zoom, right-drag or two fingers
-to pan. Buttons jump to the reference viewpoints. The camera is kept outside the
-walls, above the ground and above the roof.
+to pan. The camera is kept outside the walls, above the ground and above the roof.
+It always opens on the same north-east rear view (the `start` preset in
+`lib/viewer/views.ts`); on narrower screens the camera backs off along the same line of
+sight so the whole building stays in frame. `?view=front`, `rearNE`, `rearNW` or
+`aerial` opens on another preset instead.
+
+There is no backdrop yet: the canvas is transparent over a plain grey page, with only
+the building's shadow on an invisible ground plane.
 
 ## What is modelled
 
@@ -50,7 +56,7 @@ there is marked as measured or assumed.
 ### Checking against the references
 
 `/?match=img1`, `img2`, `img3` and `img5` render the model with the solved
-reference camera and hide the overlay. Screenshot the page at the reference's
+reference camera. Screenshot the page at the reference's
 aspect ratio and lay it over the original to compare.
 
 ## Code layout
@@ -63,5 +69,5 @@ aspect ratio and lay it over the original to compare.
 | `lib/building/building.ts` | Assembles the four façades, entrance and rear bays |
 | `lib/building/roof.ts` | Hip roof, soffit, gutters, seams (instanced), chimneys |
 | `lib/building/textures.ts` / `materials.ts` | Procedural canvas textures and materials |
-| `lib/viewer/*` | Renderer, controls, camera limits, sky and lighting, view presets |
-| `app/components/BuildingViewer.tsx` | Client component and overlay UI |
+| `lib/viewer/*` | Renderer, controls, camera limits, lighting and reflections, view presets |
+| `app/components/BuildingViewer.tsx` | Client component that mounts the viewer |

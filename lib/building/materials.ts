@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { grassTexture, pavingTexture, plinthTexture, rescaled, sidingTexture, stuccoTexture } from "./textures";
+import { pavingTexture, plinthTexture, rescaled, sidingTexture, stuccoTexture } from "./textures";
 
 export type Materials = Record<string, THREE.Material>;
 
@@ -16,7 +16,6 @@ export function createMaterials(aniso: number): Materials {
   const siding = sidingTexture(aniso);
   const plinth = plinthTexture(aniso);
   const paving = pavingTexture(aniso);
-  const grass = grassTexture(aniso);
 
   const render = (color: string, rough = 0.95) =>
     new THREE.MeshStandardMaterial({ color, map: stucco.map, bumpMap: stucco.bump, bumpScale: 0.6, roughness: rough });
@@ -73,6 +72,5 @@ export function createMaterials(aniso: number): Materials {
     interior: new THREE.MeshStandardMaterial({ ...interiorBase, color: "#3e3833" }),
     interiorLit: new THREE.MeshStandardMaterial({ ...interiorBase, color: "#9a8470", emissive: "#ffb46e", emissiveIntensity: 0.4 }),
     stairInterior: new THREE.MeshStandardMaterial({ ...interiorBase, color: "#9a938a", emissive: "#ffcc90", emissiveIntensity: 0.12 }),
-    grass: new THREE.MeshStandardMaterial({ color: "#ffffff", map: grass.map, roughness: 1 }),
   };
 }

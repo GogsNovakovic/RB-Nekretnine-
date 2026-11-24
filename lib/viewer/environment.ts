@@ -49,7 +49,7 @@ function skyMaterial(): THREE.ShaderMaterial {
   });
 }
 
-export function createSky(): THREE.Mesh {
+function createSky(): THREE.Mesh {
   const sky = new THREE.Mesh(new THREE.SphereGeometry(900, 48, 24), skyMaterial());
   sky.frustumCulled = false;
   sky.renderOrder = -1;
@@ -57,7 +57,7 @@ export function createSky(): THREE.Mesh {
   return sky;
 }
 
-/** Pre-filtered environment map from the same sky so glass/metal reflect it. */
+/** Pre-filtered environment map used only for reflections on glass and metal (never drawn as a backdrop). */
 export function createEnvironment(renderer: THREE.WebGLRenderer): THREE.Texture {
   const scene = new THREE.Scene();
   scene.add(createSky());
@@ -82,15 +82,12 @@ export function createEnvironment(renderer: THREE.WebGLRenderer): THREE.Texture 
   return rt.texture;
 }
 
-export function createGround(grass: THREE.Material): THREE.Mesh {
-  const size = 900;
-  const g = new THREE.PlaneGeometry(size, size, 1, 1);
-  const uv = g.attributes.uv as THREE.BufferAttribute;
-  for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * size, uv.getY(i) * size);
-  g.rotateX(-Math.PI / 2);
-  const mesh = new THREE.Mesh(g, grass);
+/** Invisible ground plane that only shows the building's shadow, so it doesn't float. */
+export function createShadowCatcher(): THREE.Mesh {
+  const g = new THREE.PlaneGeometry(120, 120).rotateX(-Math.PI / 2);
+  const mesh = new THREE.Mesh(g, new THREE.ShadowMaterial({ color: "#000000", opacity: 0.22 }));
   mesh.receiveShadow = true;
-  mesh.name = "ground";
+  mesh.name = "shadowCatcher";
   return mesh;
 }
 
@@ -119,7 +116,7 @@ export function createLights(): { sun: THREE.DirectionalLight; hemi: THREE.Hemis
 }
 
 /** Distant belts of deciduous trees on the horizon for scale and context (as in the renders). */
-export function createTreeLine(): THREE.Group {
+function createTreeLine(): THREE.Group {
   const rand = mulberry32(77);
   const pos: number[] = [];
   const nor: number[] = [];

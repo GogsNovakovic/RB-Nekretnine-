@@ -6,14 +6,28 @@ export interface ViewPreset {
   hint: string;
   position: Vec3;
   target: Vec3;
+  /** Vertical FOV the framing was composed at (default: the viewer's lens). */
+  fov?: number;
+  /** Viewport aspect the framing was composed at; narrower screens back off to keep the width. */
+  refAspect?: number;
 }
 
-/** Orbit presets that frame the building like the reference renders. */
+/** Orbit presets. "start" is the opening view; the others can be picked with ?view=. */
 export const VIEWS: ViewPreset[] = [
-  { id: "front", label: "Entrance", hint: "South-east, as image 1", position: [15.3, 1.9, 19.6], target: [1.6, 4.6, 1.6] },
-  { id: "rearNE", label: "Rear NE", hint: "North-east, as image 2", position: [17.2, 1.9, -19.6], target: [1.2, 4.6, -2.0] },
-  { id: "rearNW", label: "Rear NW", hint: "North-west, as image 3", position: [-17.6, 1.9, -17.6], target: [-1.6, 4.6, -1.6] },
-  { id: "aerial", label: "Aerial", hint: "From above the entrance, as image 5", position: [0, 39, 27], target: [0, 5, -0.5] },
+  {
+    // Solved from the client-approved screenshot (a 1550 × 1058 crop of the viewer):
+    // 21 point correspondences, RMS 6 px; that crop spans a 26.6° vertical field of view.
+    id: "start",
+    label: "Start",
+    hint: "Opening view from the north-east",
+    position: [24.91, 5.6, -35.88],
+    target: [-0.46, 6.5, -0.33],
+    refAspect: 1550 / 1058,
+  },
+  { id: "front", label: "Entrance", hint: "South-east, as image 1", position: [15.3, 1.9, 19.6], target: [1.6, 4.6, 1.6], fov: 40 },
+  { id: "rearNE", label: "Rear NE", hint: "North-east, as image 2", position: [17.2, 1.9, -19.6], target: [1.2, 4.6, -2.0], fov: 40 },
+  { id: "rearNW", label: "Rear NW", hint: "North-west, as image 3", position: [-17.6, 1.9, -17.6], target: [-1.6, 4.6, -1.6], fov: 40 },
+  { id: "aerial", label: "Aerial", hint: "From above the entrance, as image 5", position: [0, 39, 27], target: [0, 5, -0.5], fov: 40 },
 ];
 
 /**
