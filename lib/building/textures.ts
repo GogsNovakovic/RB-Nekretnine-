@@ -32,20 +32,20 @@ function finish(c: HTMLCanvasElement, size: number, color: boolean, aniso: numbe
   return t;
 }
 
-/** Tileable value noise in [0,1], `cells` lattice cells across the tile. */
-function valueNoise(size: number, cells: number, rand: () => number): Float32Array {
-  const grid = Array.from({ length: cells * cells }, () => rand());
+/** Tileable value noise in [0,1] with `cells` lattice cells across (and `cellsY` down) the tile. */
+function valueNoise(size: number, cells: number, rand: () => number, cellsY = cells): Float32Array {
+  const grid = Array.from({ length: cells * cellsY }, () => rand());
   const out = new Float32Array(size * size);
   const s = (t: number) => t * t * (3 - 2 * t);
   for (let y = 0; y < size; y++) {
-    const gy = (y / size) * cells;
+    const gy = (y / size) * cellsY;
     const y0 = Math.floor(gy);
     const fy = s(gy - y0);
     for (let x = 0; x < size; x++) {
       const gx = (x / size) * cells;
       const x0 = Math.floor(gx);
       const fx = s(gx - x0);
-      const g = (i: number, j: number) => grid[((j % cells) * cells + (i % cells)) | 0];
+      const g = (i: number, j: number) => grid[((j % cellsY) * cells + (i % cells)) | 0];
       const a = g(x0, y0) + (g(x0 + 1, y0) - g(x0, y0)) * fx;
       const b = g(x0, y0 + 1) + (g(x0 + 1, y0 + 1) - g(x0, y0 + 1)) * fx;
       out[y * size + x] = a + (b - a) * fy;
@@ -89,16 +89,19 @@ export function sidingTexture(aniso: number): TexturePair {
   const boards = 16;
   const bh = N / boards;
   const rand = mulberry32(23);
-  const grain = valueNoise(N, 64, rand);
+  // Grain runs along the boards: noise stretched ~20:1 horizontally.
+  const fine = valueNoise(N, 6, rand, 128);
+  const coarse = valueNoise(N, 3, rand, 24);
   const [c, ctx] = makeCanvas(N, N);
   const [cb, ctxb] = makeCanvas(N, N);
   const img = ctx.createImageData(N, N);
   const bimg = ctxb.createImageData(N, N);
+  // Boards are long (one butt joint every few metres), with gentle board-to-board tone.
   const rows = Array.from({ length: boards }, () => ({
-    tone: (rand() - 0.5) * 18,
-    warm: (rand() - 0.5) * 8,
+    tone: (rand() - 0.5) * 8,
+    warm: (rand() - 0.5) * 6,
     phase: Math.floor(rand() * N),
-    joints: [Math.floor(rand() * N), Math.floor(rand() * N)],
+    joints: rand() < 0.2 ? [Math.floor(rand() * N)] : [],
   }));
   for (let y = 0; y < N; y++) {
     const row = rows[Math.floor(y / bh)];
@@ -106,17 +109,17 @@ export function sidingTexture(aniso: number): TexturePair {
     for (let x = 0; x < N; x++) {
       const i = y * N + x;
       const gx = (x + row.phase) % N;
-      const g = grain[y * N + gx];
-      const streak = Math.sin((gx / N) * Math.PI * 2 * 3 + g * 6 + y * 0.35) * 0.5 + 0.5;
-      let r = 128 + row.tone + (g - 0.5) * 22 + streak * 7 + row.warm;
-      let gg = 104 + row.tone * 0.85 + (g - 0.5) * 18 + streak * 5;
-      let b = 95 + row.tone * 0.8 + (g - 0.5) * 14 + streak * 4 - row.warm * 0.5;
+      const g = fine[y * N + gx] * 0.6 + coarse[y * N + gx] * 0.4;
+      const streak = coarse[((y + 7) % N) * N + gx];
+      let r = 142 + row.tone + (g - 0.5) * 18 + streak * 6 + row.warm;
+      let gg = 119 + row.tone * 0.85 + (g - 0.5) * 15 + streak * 5;
+      let b = 105 + row.tone * 0.8 + (g - 0.5) * 12 + streak * 4 - row.warm * 0.5;
       let h = 150 - inBoard * 40 + (g - 0.5) * 20;
       // groove: dark shadow line at the bottom of each board, highlight at the top
-      if (inBoard > 0.9) {
-        r *= 0.45;
-        gg *= 0.45;
-        b *= 0.45;
+      if (inBoard > 0.92) {
+        r *= 0.58;
+        gg *= 0.58;
+        b *= 0.58;
         h = 20;
       } else if (inBoard < 0.06) {
         r *= 1.08;
@@ -125,10 +128,10 @@ export function sidingTexture(aniso: number): TexturePair {
         h = 200;
       }
       if (row.joints.some((j) => Math.abs(x - j) < 1)) {
-        r *= 0.55;
-        gg *= 0.55;
-        b *= 0.55;
-        h = 40;
+        r *= 0.72;
+        gg *= 0.72;
+        b *= 0.72;
+        h = 60;
       }
       img.data[i * 4] = r;
       img.data[i * 4 + 1] = gg;
@@ -189,7 +192,7 @@ export function pavingTexture(aniso: number): TexturePair {
   const rand = mulberry32(9);
   const [c, ctx] = makeCanvas(N, N);
   const [cb, ctxb] = makeCanvas(N, N);
-  ctx.fillStyle = "#6c6e70";
+  ctx.fillStyle = "#6f6d6a";
   ctx.fillRect(0, 0, N, N);
   ctxb.fillStyle = "#303030";
   ctxb.fillRect(0, 0, N, N);
@@ -199,7 +202,7 @@ export function pavingTexture(aniso: number): TexturePair {
       const vertical = (bx + by) % 2 === 0;
       for (let k = 0; k < 2; k++) {
         const t = 150 + rand() * 28;
-        ctx.fillStyle = `rgb(${t},${t + 2},${t + 4})`;
+        ctx.fillStyle = `rgb(${t + 2},${t + 1},${t})`;
         ctxb.fillStyle = `rgb(${170 + rand() * 50},0,0)`;
         const [x, y, w, h] = vertical ? [bx * u + (k * u) / 2, by * u, u / 2, u] : [bx * u, by * u + (k * u) / 2, u, u / 2];
         ctx.fillRect(x + 1.5, y + 1.5, w - 3, h - 3);

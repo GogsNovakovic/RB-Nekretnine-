@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { Ctx } from "./components";
 import { Frame, box, quadGeo, triGeo } from "./geom";
 import type { Materials } from "./materials";
-import { CHIMNEYS, EAVE_X, EAVE_Z, FASCIA_H, HD, HIP_END_PITCH, HW, REAR, RIDGE_HALF, RIDGE_Y, ROOF_BASE_Y, ROOF_PITCH, SOFFIT_Y, roofHeightAt } from "./spec";
+import { CHIMNEY, CHIMNEYS, EAVE_X, EAVE_Z, FASCIA_H, HD, HIP_END_PITCH, HW, REAR, RIDGE_HALF, RIDGE_Y, ROOF_BASE_Y, ROOF_PITCH, SEAM_SPACING, SOFFIT_Y, roofHeightAt } from "./spec";
 
 const V = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 
@@ -12,12 +12,19 @@ const V = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
  * and half-round gutters, standing-seam metal planes with real seam ribs, hip
  * and ridge cappings, and six rendered chimney / vent stacks.
  *
- * Static parts go into the shared bins; the seam ribs are returned as an
- * InstancedMesh.
+ * Called inside the "Roof" section. Static parts are merged per sub-group; the
+ * seam ribs are one InstancedMesh.
  */
-export function buildRoof(ctx: Ctx, materials: Materials): THREE.Object3D {
+export function buildRoof(ctx: Ctx, materials: Materials): void {
   const { bins } = ctx;
-  const wf = Frame.world();
+  bins.section("Soffit", () => soffit(ctx));
+  bins.section("Edge", () => edge(ctx));
+  bins.section("Covering", () => covering(ctx, materials));
+  bins.section("Stacks", () => stacks(ctx));
+}
+
+function soffit(ctx: Ctx): void {
+  const { bins } = ctx;
   const ex = EAVE_X;
   const ez = EAVE_Z;
   const y0 = SOFFIT_Y;
@@ -27,14 +34,22 @@ export function buildRoof(ctx: Ctx, materials: Materials): THREE.Object3D {
     bins.add("soffit", quadGeo([a, b, c, d], [uv(a), uv(b), uv(c), uv(d)]));
   const alongX = (p: THREE.Vector3): [number, number] => [p.x, p.z];
   const alongZ = (p: THREE.Vector3): [number, number] => [p.z, p.x];
-  sq(V(-ex, y0, ez), V(-HW, y0, HD), V(HW, y0, HD), V(ex, y0, ez), alongX); // south
-  sq(V(ex, y0, -ez), V(HW, y0, -HD), V(-HW, y0, -HD), V(-ex, y0, -ez), alongX); // north
-  sq(V(ex, y0, ez), V(HW, y0, HD), V(HW, y0, -HD), V(ex, y0, -ez), alongZ); // east
-  sq(V(-ex, y0, -ez), V(-HW, y0, -HD), V(-HW, y0, HD), V(-ex, y0, ez), alongZ); // west
-  // over the NE roof terrace the top-floor wall is recessed: close the soffit back to it
+  sq(V(-ex, y0, ez), V(-HW, y0, HD), V(HW, y0, HD), V(ex, y0, ez), alongX); // front
+  sq(V(ex, y0, -ez), V(HW, y0, -HD), V(-HW, y0, -HD), V(-ex, y0, -ez), alongX); // rear
+  sq(V(ex, y0, ez), V(HW, y0, HD), V(HW, y0, -HD), V(ex, y0, -ez), alongZ); // right
+  sq(V(-ex, y0, -ez), V(-HW, y0, -HD), V(-HW, y0, HD), V(-ex, y0, ez), alongZ); // left
+  // over the rear-right roof terrace the top-floor wall is recessed: close the soffit back to it
   const lx = HW - REAR.central.u0;
   const lz = -HD + REAR.loggiaRecess;
   sq(V(HW, y0, -HD), V(HW, y0, lz), V(lx, y0, lz), V(lx, y0, -HD), alongX);
+}
+
+function edge(ctx: Ctx): void {
+  const { bins } = ctx;
+  const wf = Frame.world();
+  const ex = EAVE_X;
+  const ez = EAVE_Z;
+  const y0 = SOFFIT_Y;
 
   /* fascia + drip edge */
   const t = 0.045;
@@ -63,6 +78,12 @@ export function buildRoof(ctx: Ctx, materials: Materials): THREE.Object3D {
   gutter(V(0, gy, -ez - gr), V(1, 0, 0), 2 * (ex + gr));
   gutter(V(ex + gr, gy, 0), V(0, 0, 1), 2 * (ez + gr));
   gutter(V(-ex - gr, gy, 0), V(0, 0, 1), 2 * (ez + gr));
+}
+
+function covering(ctx: Ctx, materials: Materials): void {
+  const { bins } = ctx;
+  const ex = EAVE_X;
+  const ez = EAVE_Z;
 
   /* roof planes */
   const rb = ROOF_BASE_Y;
@@ -90,22 +111,6 @@ export function buildRoof(ctx: Ctx, materials: Materials): THREE.Object3D {
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) capAlong(V(sx * ex, rb, sz * ez), V(sx * rx, ry, 0), 0.16, 0.07);
   capAlong(V(-rx - 0.05, ry, 0), V(rx + 0.05, ry, 0), 0.2, 0.08);
 
-  /* chimney / vent stacks */
-  const half = 0.28;
-  for (const [cx, cz] of CHIMNEYS) {
-    const hs = [roofHeightAt(cx - half, cz - half), roofHeightAt(cx + half, cz - half), roofHeightAt(cx - half, cz + half), roofHeightAt(cx + half, cz + half)];
-    const top = Math.max(...hs) + 0.95;
-    box(bins, "chimney", wf, cx - half, cx + half, Math.min(...hs) - 0.25, top, cz - half, cz + half);
-    box(bins, "zinc", wf, cx - half - 0.04, cx + half + 0.04, Math.max(...hs) - 0.05, Math.max(...hs) + 0.06, cz - half - 0.04, cz + half + 0.04);
-    box(bins, "concrete", wf, cx - half - 0.06, cx + half + 0.06, top, top + 0.08, cz - half - 0.06, cz + half + 0.06);
-    const pipe = new THREE.CylinderGeometry(0.085, 0.085, 0.42, 14);
-    pipe.translate(cx, top + 0.08 + 0.21, cz);
-    bins.add("zinc", pipe);
-    const hood = new THREE.ConeGeometry(0.17, 0.14, 14);
-    hood.translate(cx, top + 0.08 + 0.42 + 0.08, cz);
-    bins.add("zinc", hood);
-  }
-
   /* standing-seam ribs (instanced) */
   const ribGeo = new THREE.BoxGeometry(0.03, 0.04, 1);
   ribGeo.translate(0, 0.02, 0.5);
@@ -121,7 +126,7 @@ export function buildRoof(ctx: Ctx, materials: Materials): THREE.Object3D {
     m.setPosition(start.clone().addScaledVector(d, inset));
     mats.push(m);
   };
-  const spacing = 0.5;
+  const spacing = SEAM_SPACING;
   // long slopes: seams run up to the ridge, or to the hip line beyond the ridge ends
   const [c, s] = [Math.cos(ROOF_PITCH), Math.sin(ROOF_PITCH)];
   for (let x = -ex + spacing / 2; x < ex; x += spacing) {
@@ -141,6 +146,27 @@ export function buildRoof(ctx: Ctx, materials: Materials): THREE.Object3D {
   ribs.instanceMatrix.needsUpdate = true;
   ribs.castShadow = true;
   ribs.receiveShadow = true;
-  ribs.name = "roofSeams";
-  return ribs;
+  ribs.name = "seams";
+  bins.addObject(ribs);
+}
+
+/** Rendered chimney / vent stacks with a cap and a metal flue terminal (see CHIMNEY in spec.ts). */
+function stacks(ctx: Ctx): void {
+  const { bins } = ctx;
+  const wf = Frame.world();
+  const c = CHIMNEY;
+  const half = c.half;
+  for (const [cx, cz] of CHIMNEYS) {
+    const hs = [roofHeightAt(cx - half, cz - half), roofHeightAt(cx + half, cz - half), roofHeightAt(cx - half, cz + half), roofHeightAt(cx + half, cz + half)];
+    const top = Math.max(...hs) + c.height;
+    box(bins, "chimney", wf, cx - half, cx + half, Math.min(...hs) - 0.25, top, cz - half, cz + half);
+    box(bins, "zinc", wf, cx - half - 0.04, cx + half + 0.04, Math.max(...hs) - 0.05, Math.max(...hs) + 0.06, cz - half - 0.04, cz + half + 0.04);
+    box(bins, "concrete", wf, cx - half - 0.06, cx + half + 0.06, top, top + c.capT, cz - half - 0.06, cz + half + 0.06);
+    const pipe = new THREE.CylinderGeometry(c.flueR, c.flueR, c.flueH, 14);
+    pipe.translate(cx, top + c.capT + c.flueH / 2, cz);
+    bins.add("zinc", pipe);
+    const hood = new THREE.ConeGeometry(c.hoodR, c.hoodH, 14);
+    hood.translate(cx, top + c.capT + c.flueH + c.hoodH / 2 + 0.02, cz);
+    bins.add("zinc", hood);
+  }
 }

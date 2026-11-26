@@ -4,20 +4,21 @@ Covers every reference in the repo: `Building/`, `Building/Construction phases/`
 `Apartment floor plan/` and `reference/`. All 21 images were opened, and the 8 s video was
 sampled at 0–7.9 s (9 frames). Details were checked on crops.
 
-**Orientation.** No true orientation is supplied. Compass words are relative labels
-taken from `lib/building/spec.ts`: the entrance façade is "south", so the camera of R01
-is "SE", and so on.
+**Orientation.** The references give no compass orientation, so façades are named
+relative to the building, as in `lib/building/spec.ts`: **front** is the entrance façade,
+**rear** is opposite it, and **left** / **right** are as seen by someone standing in front
+of the entrance. R01 is therefore a front-right view, R02 rear-right, R03 rear-left.
 
 ## 1. Register
 
 | ID | File | View | Visible parts | Geometric evidence | Material evidence | Uncertainties |
 |---|---|---|---|---|---|---|
-| **R01** | `Building/Image 1.png` (2120×1398) | SE oblique, eye level, level camera | Front (entrance) + east façade, eaves, soffit | 3 window rows, 2+2 windows per floor around the stair core; entrance recess, landing, ramp, handrails; east grey strip, recessed window bands; NE portal pier and cantilevered slabs end-on | White render, horizontal timber, grey plinth, timber soffit, grey gutters/downpipes, timber window frames | Entrance door split (single leaf + sidelight?); stair interior only faintly visible |
-| **R02** | `Building/Image 2.png` (2136×1402) | NE oblique, eye level | East + rear façades | NE portal frame wrapping the corner, loggia, slabs open to the east; central box balconies ×2; west open balconies ×2; privacy screens; stepped terraces | Grey box balconies, glass balustrades + steel rails, timber screens, concrete terraces | West-bay balconies are strongly foreshortened |
-| **R03** | `Building/Image 3.png` (2122×1388) | NW oblique, eye level | Rear + west façades | Same rear bays seen from the other side; sky visible *through* the portal (loggia open to the east); west façade mirrors the east one; NW downpipe | Same as R02 | SW corner of the west façade is far away and small |
-| **R04a–d** | `Building/Image 4.png` (2146×1218) | 2×2 contact sheet: SE, NE, NW, aerial | Same as R01, R02, R03, R05 | None new: proportions match R01/R02 within reading error (front:east width 0.45 vs 0.43) | Same | Reframed at ~1070 px per panel, so lower resolution; not pixel-identical crops |
-| **R05** | `Building/Image 5.png` (1864×1284) | Elevated view from the south, looking down at a steep angle | Whole roof, front façade ground + first floor, entrance path | Hip roof with a short ridge parallel to the front; 6 stacks; landing + steps (west half) + ramp running south (east half) | Red-maroon standing-seam metal, light-grey stacks with metal flues, herringbone pavers | Top floor hidden by the eave; the "grass" in the stair glazing is a reflection of the ground and path |
-| **R06** | `Building/Positano Villa Overlooking the Sea.png` (1518×1036) | NE-ish oblique, more square-on to the rear than R02 | East + rear | Same massing and bay rhythm as the Set A rear (see §2); 6 large chimneys | Travertine-type stone, timber, terracotta tiles, dark window frames, wall lights | **AI-edited restyle.** Not the R02 camera; proportions unreliable |
+| **R01** | `Building/Image 1.png` (2120×1398) | front-right oblique, eye level, level camera | Front (entrance) + right façade, eaves, soffit | 3 window rows, 2+2 windows per floor around the stair core; entrance recess, landing, ramp, handrails; right grey strip, recessed window bands; rear-right portal pier and cantilevered slabs end-on | White render, horizontal timber, grey plinth, timber soffit, grey gutters/downpipes, timber window frames | Entrance door split (single leaf + sidelight?); stair interior only faintly visible |
+| **R02** | `Building/Image 2.png` (2136×1402) | Rear-right oblique, eye level | Right + rear façades | Rear-right portal frame wrapping the corner, loggia, slabs open to the right; central box balconies ×2; left open balconies ×2; privacy screens; stepped terraces | Grey box balconies, glass balustrades + steel rails, timber screens, concrete terraces | Left-bay balconies are strongly foreshortened |
+| **R03** | `Building/Image 3.png` (2122×1388) | rear-left oblique, eye level | Rear + left façades | Same rear bays seen from the other side; sky visible *through* the portal (loggia open to the right); left façade mirrors the right one; rear-left downpipe | Same as R02 | front-left corner of the left façade is far away and small |
+| **R04a–d** | `Building/Image 4.png` (2146×1218) | 2×2 contact sheet: front-right, rear-right, rear-left, aerial | Same as R01, R02, R03, R05 | None new: proportions match R01/R02 within reading error (front:right width 0.45 vs 0.43) | Same | Reframed at ~1070 px per panel, so lower resolution; not pixel-identical crops |
+| **R05** | `Building/Image 5.png` (1864×1284) | Elevated view from the front, looking down at a steep angle | Whole roof, front façade ground + first floor, entrance path | Hip roof with a short ridge parallel to the front; 6 stacks; landing + steps (left half) + ramp running straight out from the front (right half) | Red-maroon standing-seam metal, light-grey stacks with metal flues, herringbone pavers | Top floor hidden by the eave; the "grass" in the stair glazing is a reflection of the ground and path |
+| **R06** | `Building/Positano Villa Overlooking the Sea.png` (1518×1036) | rear-right-ish oblique, more square-on to the rear than R02 | Right + rear | Same massing and bay rhythm as the Set A rear (see §2); 6 large chimneys | Travertine-type stone, timber, terracotta tiles, dark window frames, wall lights | **AI-edited restyle.** Not the R02 camera; proportions unreliable |
 | **R07** | `Building/Construction phases/09 - Finished villa 16x9 (crop).png` (1518×854) | Same as R06 | — | Crop of R06, nothing new | — | — |
 | **R08** | `Building/Mediterranean Villa Construction Progress Storyboard.png` (1672×941) | 8 panels from a street/hillside camera | Villa from excavation to finished | None reliable: footprint, bay count and position change between panels | Stone, terracotta, timber | AI-generated |
 | **R09–R16** | `Building/Construction phases/01–08 *.png` (414×467 each) | Same as R08 | — | Crops of the eight R08 panels | — | — |
@@ -31,13 +32,13 @@ is "SE", and so on.
 ## 2. Same building, same revision?
 
 - **Set A: R01, R02, R03, R04, R05.** One set of CG renders of one design. Every
-  cross-check agrees: 3 storeys; front symmetric about the stair core; east and west
+  cross-check agrees: 3 storeys; front symmetric about the stair core; right and left
   façades mirror each other; rear bays in the same order from both sides; stacks only
   in R05, which is consistent (§6). **This is the coherent geometry set.**
 - **Set B: R06, R07.** An AI restyle of the Set A design, with the same rear bay order
-  (east → west: corner block, box balconies, open balconies), the same east-side grey strip
+  (right → left: corner block, box balconies, open balconies), the same right-side grey strip
   and timber-panel window bands, and 3 storeys. It **conflicts** with Set A on:
-  - The NE portal is filled in with stone: the two-storey loggia becomes a wall with a
+  - The rear-right portal is filled in with stone: the two-storey loggia becomes a wall with a
     projecting balcony and French doors.
   - The roof terrace above the portal is gone; the top floor there is a timber wall
     with a window.
@@ -60,8 +61,8 @@ into Set A. Sets C and D give no geometric evidence.
 ## 3. Massing and levels (Set A)
 
 - One rectangular block, no wings, courtyards or setbacks in plan, apart from the rear
-  additions: a projecting central bay, and the NE portal frame that stands proud of the
-  rear and east walls (R02, R03).
+  additions: a projecting central bay, and the rear-right portal frame that stands proud of the
+  rear and right walls (R02, R03).
 - **Three storeys, checked against several clues:**
   - R01 has three window rows, with the entrance at the lowest.
   - R02/R03 show ground-floor doors onto the terraces plus two balcony levels.
@@ -83,10 +84,10 @@ into Set A. Sets C and D give no geometric evidence.
   size, slightly taller than wide, and stacked in vertical lines. Single sash with a
   timber frame, grey reveals and a slim light sill.
 - Recessed entrance under a grey lintel band, with a glazed timber-framed door (§7).
-- Downpipe on the front face at the SE corner. None at the SW corner of the front face
+- Downpipe on the front face at the front-right corner. None at the front-left corner of the front face
   (R01, R05).
 
-**East** (R01 from the south end, R02 from the north end)
+**Right** (R01 from the front end, R02 from the rear end)
 - A grey vertical strip near the **front** end, running from the plinth to the render
   line. It has narrow windows on the ground and first floors with grey panels between
   them, and a narrow window above it in the timber zone.
@@ -94,30 +95,30 @@ into Set A. Sets C and D give no geometric evidence.
   panel + window, with white reveals.
 - Top floor: 3 windows in the timber zone, two lined up over the band windows and the
   narrow one over the strip.
-- North end: the east face of the portal pier. Between the pier and the main wall, the
+- Rear end: the right face of the portal pier. Between the pier and the main wall, the
   loggia slab (first floor) and terrace slab (top floor) cantilever out with glass
   balustrades. Downpipe at the junction.
 
-**West** (R03, R04c)
-- Mirrors the east façade: strip near the front end, two recessed bands, three top-floor
+**Left** (R03, R04c)
+- Mirrors the right façade: strip near the front end, two recessed bands, three top-floor
   windows.
-- No portal: the façade runs straight to the NW corner. Downpipe at the NW corner.
-  Whether there is one at the SW corner is not visible.
+- No portal: the façade runs straight to the rear-left corner. Downpipe at the rear-left corner.
+  Whether there is one at the front-left corner is not visible.
 
-**Rear** (R02, R03, R04b–c), east to west:
-1. **NE portal.** A white two-storey frame wrapping the corner, in front of a loggia:
+**Rear** (R02, R03, R04b–c), right to left:
+1. **Rear-right portal.** A white two-storey frame wrapping the corner, in front of a loggia:
    - First floor: a recessed balcony with a glass balustrade.
    - Ground floor: a 2-panel sliding door to the terrace.
-   - The loggia is open to the east (sky visible through it in R03).
-   - The top of the frame is a roof terrace: white parapet to the north (R03), glass to
-     the east (R02).
+   - The loggia is open to the right (sky visible through it in R03).
+   - The top of the frame is a roof terrace: white parapet to the rear (R03), glass to
+     the right (R02).
 2. **Central bay**, projecting (returns visible):
    - Grey box balconies on the first and top floors: solid grey side walls and soffit,
      glass front with a steel top rail.
    - A 3-panel sliding door on each level.
-   - Ground floor: a 3-panel sliding door between two free-standing privacy screens made
-     of horizontal timber slats.
-3. **West bay.** Open cantilever balconies on the first and top floors (grey slab, glass
+   - Ground floor: a 3-panel sliding door between two privacy fins made of horizontal
+     timber slats. The fins stand perpendicular to the façade and divide the terraces (§11).
+3. **Left bay.** Open cantilever balconies on the first and top floors (grey slab, glass
    on the front and returns, steel rail on posts) with 2-panel doors. A 2-panel door on
    the ground floor.
 
@@ -130,9 +131,9 @@ into Set A. Sets C and D give no geometric evidence.
 | Element | Where | Construction (observed) | Attachment |
 |---|---|---|---|
 | Box balcony | Rear central bay, 1F + top floor | Grey U-shaped box: deep soffit, solid side walls up to about rail height, glass front with steel rail and bottom shoe | Cantilevers from the central bay face; no posts |
-| Open balcony | Rear west bay, 1F + top floor | Thin grey slab, glass panels with clamps, steel posts and top rail on the front and both returns | Cantilevers, no posts |
-| Loggia balcony | Inside the NE portal, 1F | Glass balustrade on a grey slab edge; slab continues east past the pier line (R02) | Within the frame |
-| Roof terrace | On top of the NE portal | White parapet (north), glass (east) | Slab on the portal frame |
+| Open balcony | Rear left bay, 1F + top floor | Thin grey slab, glass panels with clamps, steel posts and top rail on the front and both returns | Cantilevers, no posts |
+| Loggia balcony | Inside the rear-right portal, 1F | Glass balustrade on a grey slab edge; slab continues right past the pier line (R02) | Within the frame |
+| Roof terrace | On top of the rear-right portal | White parapet (rear), glass (right) | Slab on the portal frame |
 | Ground terraces | Full rear length | Light-grey concrete, two steps down to the grass | On grade |
 
 ## 6. Roof
@@ -159,14 +160,14 @@ into Set A. Sets C and D give no geometric evidence.
 ## 7. Entrance, ramp, details
 
 - **Recess** below the stair glazing, under a grey lintel band.
-  - R01 shows the inner face of the west jamb and a timber-framed glazed door with a
+  - R01 shows the inner face of the left jamb and a timber-framed glazed door with a
     narrow sidelight.
   - R05, from above, shows timber-framed glazing in 3 panels across the full recess
     width.
   - **The door/sidelight split is uncertain.**
-- **Landing** the width of the core. Steps go down to the south on its west half; a
-  **ramp** runs south on its east half, perpendicular to the façade (R05). In R01 the
-  ramp appears to run down and to the left, which is the same southward direction seen
+- **Landing** the width of the core. Steps lead down away from the façade on its left half; a
+  **ramp** runs straight out from the front on its right half, perpendicular to the façade (R05). In R01 the
+  ramp appears to run down and to the left, which is the same direction away from the front façade seen
   in perspective.
 - Two steel **handrails** with looped ends (R01).
 - **Paving:** grey pavers in a herringbone pattern on the landing and ramp (R05).
@@ -204,7 +205,7 @@ No weathering anywhere: these are clean CG renders.
   - the entrance arrangement;
   - material families.
 - **Inferred:**
-  - the loggia is open to the east (R03 sky plus R02 slab ends);
+  - the loggia is open to the right (R03 sky plus R02 slab ends);
   - the central rear bay projects (returns visible);
   - the stair-core "grass" in R05 is a reflection;
   - the stacks are no more than about 1.6 m tall (sightline calculation);
@@ -212,7 +213,7 @@ No weathering anywhere: these are clean CG renders.
 - **Unknown:**
   - absolute scale (the existing spec assumes a 3.0 m storey);
   - wall, slab and reveal thicknesses;
-  - the SW downpipe;
+  - the front-left downpipe;
   - the exact entrance door configuration;
   - the interior and stair layout;
   - flat layout and count per floor (six stacks would fit 2 flats × 3 floors, but
@@ -223,7 +224,7 @@ No weathering anywhere: these are clean CG renders.
 
 1. Set A is the design of record. Set B is a restyle and does not override it (R01–R05
    vs R06).
-2. The east and west façades are mirror images, including the top-floor window
+2. The right and left façades are mirror images, including the top-floor window
    positions (R01, R02, R03).
 3. Hidden faces repeat what is seen on their visible counterparts, e.g. the far side of
    each box balcony (R02, R03).
@@ -232,12 +233,17 @@ No weathering anywhere: these are clean CG renders.
    views (R01–R03, R05).
 6. The floor plans are not used for the exterior (R18–R22).
 
-## 11. Points to check in the current model
+## 11. Points resolved in the model
 
-- **Stack height.** In `roof.ts` each stack is 0.95 m plus cap, flue and hood, so the
-  hood tips reach about 1.7 m above the roof at the stack centre. That is just over the
-  ~1.62 m limit for the front pair from the R01 camera. The tips may just show above the
-  eaves in `?match=img1`; the gutter lip may hide them. Check that view.
-- **Entrance door.** The README says "glazed double doors". R01 suggests a single leaf
-  plus a sidelight, and R05 suggests 3 panels across the recess. Not settled by the
-  references.
+- **Stack height.** Stacks are now 0.7 m plus cap, flue and hood (`CHIMNEY` in
+  `lib/building/spec.ts`), about 1.3 m above the roof at the stack centre. That is under the
+  ~1.6 m sight-line limit, so none of them shows above the eaves in `?match=img1`–`img3`.
+- **Entrance door.** Modelled as sidelight · glazed leaf · sidelight across the back of the
+  recess. This satisfies both R01 (one leaf plus a narrow sidelight; the other sidelight is
+  hidden behind the right-hand jamb from that camera) and R05 (three panels). It is still an
+  inference and lives in its own `EntranceDoor` group.
+- **Privacy screens are fins, not flat panels.** Overlaying the model on R02 and R03 showed
+  that panels parallel to the façade cannot match both views. Fins perpendicular to the façade
+  do: their roots coincide in both images while the free ends swing to opposite sides. One fin
+  is on the line of the portal's inner pier and one at the left-hand corner of the central
+  bay. Each is about 0.8 m long and 2.2 m high.

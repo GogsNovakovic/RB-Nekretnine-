@@ -47,11 +47,37 @@ export class Frame {
 }
 
 /**
- * Collects geometry per material key and merges it into one mesh per material
- * at the end (a few dozen draw calls for the whole building).
+ * Collects geometry per structural section and material, then merges it into one
+ * mesh per (section, material). The scene graph therefore follows the building's
+ * structure (Building › Facades › Front …) while staying at a modest draw-call count.
+ *
+ * Sections nest: `bins.section("Roof", () => …)` adds everything generated inside the
+ * callback to the "Roof" group under whatever section is currently open.
  */
 export class Bins {
-  private readonly parts = new Map<string, THREE.BufferGeometry[]>();
+  private readonly parts = new Map<string, Map<string, THREE.BufferGeometry[]>>();
+  private readonly objects = new Map<string, THREE.Object3D[]>();
+  private path: string[] = [];
+
+  section<T>(name: string, fn: () => T): T {
+    this.path.push(name);
+    try {
+      return fn();
+    } finally {
+      this.path.pop();
+    }
+  }
+
+  /** Run `fn` with an absolute section path (e.g. all interiors go to one group). */
+  at<T>(path: string[], fn: () => T): T {
+    const saved = this.path;
+    this.path = [...path];
+    try {
+      return fn();
+    } finally {
+      this.path = saved;
+    }
+  }
 
   add(key: string, geo: THREE.BufferGeometry, frame?: Frame, keepColor = false): void {
     const g = geo.index ? geo.toNonIndexed() : geo;
@@ -66,29 +92,60 @@ export class Bins {
     }
     g.clearGroups();
     if (frame) g.applyMatrix4(frame.m);
-    let list = this.parts.get(key);
-    if (!list) this.parts.set(key, (list = []));
+    const sec = this.path.join("/");
+    let byMat = this.parts.get(sec);
+    if (!byMat) this.parts.set(sec, (byMat = new Map()));
+    let list = byMat.get(key);
+    if (!list) byMat.set(key, (list = []));
     list.push(g);
   }
 
-  build(materials: Record<string, THREE.Material>, noShadow: ReadonlySet<string>): THREE.Group {
-    const group = new THREE.Group();
-    for (const [key, list] of this.parts) {
-      const mat = materials[key];
-      if (!mat) throw new Error(`No material for bin "${key}"`);
-      const merged = mergeGeometries(list, false);
-      if (!merged) throw new Error(`Could not merge geometry for "${key}"`);
-      list.forEach((g) => g.dispose());
-      merged.computeBoundingSphere();
-      const mesh = new THREE.Mesh(merged, mat);
-      mesh.name = key;
-      const shadows = !noShadow.has(key);
-      mesh.castShadow = shadows;
-      mesh.receiveShadow = shadows;
-      group.add(mesh);
+  /** Add a ready-made object (e.g. an InstancedMesh) to the current section. */
+  addObject(obj: THREE.Object3D): void {
+    const sec = this.path.join("/");
+    let list = this.objects.get(sec);
+    if (!list) this.objects.set(sec, (list = []));
+    list.push(obj);
+  }
+
+  build(rootName: string, materials: Record<string, THREE.Material>, noShadow: ReadonlySet<string>): THREE.Group {
+    const root = new THREE.Group();
+    root.name = rootName;
+    const groups = new Map<string, THREE.Group>([["", root]]);
+    const groupFor = (sec: string): THREE.Group => {
+      let g = groups.get(sec);
+      if (g) return g;
+      const cut = sec.lastIndexOf("/");
+      const parent = groupFor(cut < 0 ? "" : sec.slice(0, cut));
+      g = new THREE.Group();
+      g.name = sec.slice(cut + 1);
+      parent.add(g);
+      groups.set(sec, g);
+      return g;
+    };
+    for (const [sec, byMat] of this.parts) {
+      const group = groupFor(sec);
+      for (const [key, list] of byMat) {
+        const mat = materials[key];
+        if (!mat) throw new Error(`No material for "${key}"`);
+        const merged = mergeGeometries(list, false);
+        if (!merged) throw new Error(`Could not merge geometry for "${sec}/${key}"`);
+        list.forEach((g) => g.dispose());
+        merged.computeBoundingSphere();
+        merged.computeBoundingBox();
+        const mesh = new THREE.Mesh(merged, mat);
+        mesh.name = key;
+        const shadows = !noShadow.has(key);
+        mesh.castShadow = shadows;
+        mesh.receiveShadow = shadows;
+        mesh.matrixAutoUpdate = false;
+        group.add(mesh);
+      }
     }
+    for (const [sec, list] of this.objects) groupFor(sec).add(...list);
     this.parts.clear();
-    return group;
+    this.objects.clear();
+    return root;
   }
 }
 

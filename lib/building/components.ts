@@ -11,6 +11,8 @@ export interface GlazingOpts {
   inset: number;
   /** 1 = single-sash window, ≥2 = door/sliding leaves separated by mullions. */
   panels?: number;
+  /** Relative panel widths (overrides `panels`), e.g. sidelight · leaf · sidelight. */
+  panelWidths?: readonly number[];
   door?: boolean;
   sill?: boolean;
   /** Material that lines the reveal between the wall face and the frame (null = wall material shows). */
@@ -37,7 +39,8 @@ export function glazedOpening(ctx: Ctx, f: Frame, r: Rect, o: GlazingOpts): void
   const frameKey = o.frameKey ?? "frame";
   const wF = -o.inset;
   const wB = wF - FD;
-  const panels = o.panels ?? 1;
+  const weights = o.panelWidths ?? Array.from({ length: o.panels ?? 1 }, () => 1);
+  const panels = weights.length;
 
   if (o.lining) {
     const t = 0.012;
@@ -59,10 +62,12 @@ export function glazedOpening(ctx: Ctx, f: Frame, r: Rect, o: GlazingOpts): void
   const iv0 = r.v0 + fb;
   const iv1 = r.v1 - FW;
   const mw = panels > 1 ? 0.07 : 0;
-  const pw = (iu1 - iu0 - (panels - 1) * mw) / panels;
+  const wsum = weights.reduce((a, b) => a + b, 0);
+  const avail = iu1 - iu0 - (panels - 1) * mw;
+  let pu1 = iu0 - mw;
   for (let i = 0; i < panels; i++) {
-    const pu0 = iu0 + i * (pw + mw);
-    const pu1 = pu0 + pw;
+    const pu0 = pu1 + mw;
+    pu1 = pu0 + (avail * weights[i]) / wsum;
     if (i < panels - 1) box(bins, frameKey, f, pu1, pu1 + mw, iv0, iv1, wB + 0.005, wF - 0.005);
     const shift = o.sliding && i % 2 === 1 ? -0.025 : 0;
     const s0 = wB + 0.012 + shift;
@@ -99,7 +104,9 @@ export function glazedOpening(ctx: Ctx, f: Frame, r: Rect, o: GlazingOpts): void
     box(bins, "sill", f, r.u0 - 0.035, r.u1 + 0.035, r.v0 - 0.04, r.v0 + 0.008, wF, 0.055);
   }
 
-  if (o.room) roomBox(ctx, f, r.u0 - 0.5, r.u1 + 0.5, o.room.v0, o.room.v1, -o.wallT, -o.wallT - 2.4, ctx.rand() < 0.45);
+  // Simple room behind the glass (inferred) so the opening keeps its depth from any angle.
+  const room = o.room;
+  if (room) ctx.bins.at(["Interiors"], () => roomBox(ctx, f, r.u0 - 0.5, r.u1 + 0.5, room.v0, room.v1, -o.wallT, -o.wallT - 2.4, ctx.rand() < 0.45));
 }
 
 /** Inward-facing room volume (5 faces) with per-face tones via vertex colours. */
@@ -173,8 +180,7 @@ export function glassBalustrade(ctx: Ctx, f: Frame, segs: RailSegment[], vRail: 
 }
 
 /** Cantilevered open balcony: grey slab, glass on the slab face, glass side returns. */
-export function openBalcony(ctx: Ctx, f: Frame, u0: number, u1: number, wWall: number, depth: number, top: number): void {
-  const slabT = 0.32;
+export function openBalcony(ctx: Ctx, f: Frame, u0: number, u1: number, wWall: number, depth: number, top: number, slabT: number): void {
   const wf = wWall + depth;
   box(ctx.bins, "concrete", f, u0, u1, top - slabT, top, wWall, wf);
   box(ctx.bins, "paving", f, u0 + 0.02, u1 - 0.02, top, top + 0.012, wWall, wf - 0.02);
@@ -192,9 +198,7 @@ export function openBalcony(ctx: Ctx, f: Frame, u0: number, u1: number, wWall: n
 }
 
 /** Box balcony: thick grey slab and solid cheek walls framing a glass front. */
-export function boxBalcony(ctx: Ctx, f: Frame, u0: number, u1: number, wWall: number, depth: number, top: number): void {
-  const slabT = 0.4;
-  const cheek = 0.2;
+export function boxBalcony(ctx: Ctx, f: Frame, u0: number, u1: number, wWall: number, depth: number, top: number, slabT: number, cheek: number): void {
   const wf = wWall + depth;
   const { bins } = ctx;
   box(bins, "concrete", f, u0, u1, top - slabT, top, wWall, wf);
@@ -217,18 +221,25 @@ export function downpipe(ctx: Ctx, f: Frame, u: number, gutterW: number, gutterV
   for (let v = 1.6; v < gutterV - 1.6; v += 2.2) box(ctx.bins, "zinc", f, u - 0.065, u + 0.065, v, v + 0.035, 0.0, wallW + 0.06);
 }
 
-/** Dark timber privacy / sliding-shutter panel standing proud of the wall. */
-export function timberScreen(ctx: Ctx, f: Frame, u0: number, u1: number, v0: number, v1: number, w: number): void {
+/**
+ * Free-standing timber privacy fin, perpendicular to the wall: horizontal boards on
+ * both faces of a dark steel core plate (visible in the board joints) with a steel cap.
+ * `u` is the fin's centre line on the parent frame; it runs outwards from w0 to w1.
+ */
+export function timberFin(ctx: Ctx, f: Frame, u: number, w0: number, w1: number, v0: number, v1: number, thickness: number): void {
   const { bins } = ctx;
-  box(bins, "darkSteel", f, u0 + 0.05, u1 - 0.05, v1, v1 + 0.04, w - 0.05, w + 0.01);
+  const sf = f.segment(u, w0, 0, 1); // local u' runs outwards along the fin, w' across it
+  const len = w1 - w0;
+  const t = thickness / 2;
+  box(bins, "darkSteel", sf, 0, len - 0.01, v0, v1, -t + 0.012, t - 0.012);
+  box(bins, "darkSteel", sf, -0.005, len, v1, v1 + 0.03, -t - 0.005, t + 0.005);
   const boards = Math.round((v1 - v0) / 0.155);
   const bh = (v1 - v0) / boards;
   for (let i = 0; i < boards; i++) {
     const b0 = v0 + i * bh;
-    box(bins, "woodDark", f, u0, u1, b0 + 0.008, b0 + bh, w, w + 0.045);
+    box(bins, "woodDark", sf, 0, len, b0 + 0.008, b0 + bh, t - 0.02, t);
+    box(bins, "woodDark", sf, 0, len, b0 + 0.008, b0 + bh, -t, -t + 0.02);
   }
-  box(bins, "woodDark", f, u0 + 0.04, u0 + 0.1, v0, v1, w - 0.03, w);
-  box(bins, "woodDark", f, u1 - 0.1, u1 - 0.04, v0, v1, w - 0.03, w);
 }
 
 /**
