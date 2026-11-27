@@ -19,10 +19,22 @@ export interface ViewerStats {
 }
 
 export interface Viewer {
+  canvas: HTMLCanvasElement;
   /** Animate back to the fitted opening view. */
   reset(animate?: boolean): void;
+  /** Enable or disable the controls; a locked canvas ignores the pointer and leaves the tab order. */
+  setInteractive(on: boolean): void;
+  /** Ease the camera `degrees` around the building over `durationMs`, multiplying its distance by `distanceFactor`. A pointer press cancels it. */
+  orbitBy(degrees: number, durationMs: number, distanceFactor?: number): void;
   stats(): ViewerStats;
   dispose(): void;
+}
+
+/** Explicit opening view, in degrees (see config.ts for the axes). `fov` is the vertical field of view. */
+export interface ViewAngles {
+  azimuth: number;
+  elevation: number;
+  fov?: number;
 }
 
 export interface ViewerOptions {
@@ -30,6 +42,18 @@ export interface ViewerOptions {
   match?: string | null;
   /** Opening direction preset from views.ts (default "start"). */
   initialView?: string | null;
+  /** Opening view: a preset name from views.ts or explicit angles. Takes precedence over `initialView`. */
+  view?: string | ViewAngles | null;
+  /** Fraction of the frame the fitted building may fill (default 1 − VIEWER.margin). */
+  fitMargin?: number;
+  /** Moves the rendered picture by these fractions of the canvas size; positive is right and down. */
+  viewShift?: [number, number];
+  /** Start with the controls enabled (default true). */
+  interactive?: boolean;
+  /** false: the mouse wheel scrolls the page and only zooms with Ctrl / Cmd held (trackpad pinch). Default true. */
+  wheelZoom?: boolean;
+  /** CSS touch-action for the canvas, applied after the controls set their own (default "none"). */
+  touchAction?: string;
   onReady?: () => void;
   onError?: (reason: "webgl" | "build" | "context-lost") => void;
   /** First user interaction (used to fade the gesture hint). */
@@ -111,18 +135,31 @@ export function createViewer(container: HTMLElement, opts: ViewerOptions = {}): 
 
   /* ----------------------------------------------------------- camera */
   const camera = new THREE.PerspectiveCamera(VIEWER.lens.fov, 1, VIEWER.lens.near, VIEWER.lens.far);
+  // Must be registered before OrbitControls adds its own wheel listener, so it runs first and can stop it.
+  const onWheelCapture = (e: WheelEvent) => {
+    if (!e.ctrlKey && !e.metaKey) e.stopImmediatePropagation();
+  };
+  if (opts.wheelZoom === false) canvas.addEventListener("wheel", onWheelCapture, { capture: true, passive: true });
   const controls = createControls(camera, canvas);
+  // OrbitControls has just set touch-action: none; override it only after that.
+  if (opts.touchAction) canvas.style.touchAction = opts.touchAction;
   const limits = new Constraints(controls, cameraKeepOut(VIEWER.controls.wallClearance), bounds);
   if (match) controls.enabled = false;
 
-  const startDir = (() => {
-    const v = VIEWS[opts.initialView ?? "start"] ?? VIEWS.start;
-    return direction(v.azimuth, v.elevation);
+  const viewSpec = (() => {
+    const v = opts.view ?? opts.initialView;
+    if (v && typeof v === "object") return v;
+    return VIEWS[v ?? "start"] ?? VIEWS.start;
   })();
-  const fitStart = (): Fit => fitToView(fitPoints, startDir, camera.fov, camera.aspect, VIEWER.margin);
+  const fixedFov = "fov" in viewSpec && typeof viewSpec.fov === "number" ? viewSpec.fov : null;
+  const margin = typeof opts.fitMargin === "number" ? 1 - opts.fitMargin : VIEWER.margin;
+  const shift = opts.viewShift ?? [0, 0];
+  const startDir = direction(viewSpec.azimuth, viewSpec.elevation);
+  const fitStart = (): Fit => fitToView(fitPoints, startDir, camera.fov, camera.aspect, margin);
 
   /** Vertical FOV: the lens on landscape screens, wider on portrait so the horizontal FOV holds. */
   const fovFor = (aspect: number) => {
+    if (fixedFov !== null) return fixedFov;
     const minH = THREE.MathUtils.degToRad(VIEWER.lens.minHorizontalFov);
     const v = 2 * Math.atan(Math.tan(minH / 2) / aspect);
     return Math.max(VIEWER.lens.fov, THREE.MathUtils.radToDeg(v));
@@ -154,6 +191,9 @@ export function createViewer(container: HTMLElement, opts: ViewerOptions = {}): 
   let ready = false;
   let pristine = true; // no user interaction since load / reset: resizes re-fit the view
   let tween: { p0: THREE.Vector3; t0: THREE.Vector3; p1: THREE.Vector3; t1: THREE.Vector3; start: number; dur: number } | null = null;
+  let orbit: { from: THREE.Spherical; dTheta: number; r1: number; start: number; dur: number } | null = null;
+  const orbitSph = new THREE.Spherical();
+  const orbitOff = new THREE.Vector3();
   const intervals: number[] = [];
   let lastFrame = 0;
   let lastMean: number | null = null;
@@ -172,6 +212,15 @@ export function createViewer(container: HTMLElement, opts: ViewerOptions = {}): 
         camera.position.lerpVectors(tween.p0, tween.p1, ease(k));
         controls.target.lerpVectors(tween.t0, tween.t1, ease(k));
         if (k >= 1) tween = null;
+        busy = true;
+      }
+      if (orbit) {
+        const k = Math.min(1, (now - orbit.start) / orbit.dur);
+        const e = ease(k);
+        orbitSph.set(orbit.from.radius + (orbit.r1 - orbit.from.radius) * e, orbit.from.phi, orbit.from.theta + orbit.dTheta * e);
+        camera.position.copy(controls.target).add(orbitOff.setFromSpherical(orbitSph));
+        camera.lookAt(controls.target);
+        if (k >= 1) orbit = null;
         busy = true;
       }
       limits.beforeUpdate();
@@ -224,8 +273,27 @@ export function createViewer(container: HTMLElement, opts: ViewerOptions = {}): 
   const reset = (animate = true) => {
     if (match) return;
     pristine = true;
+    orbit = null;
     goTo(fitStart(), startDir, animate);
   };
+
+  const orbitBy = (degrees: number, durationMs: number, distanceFactor = 1) => {
+    if (match) return;
+    tween = null;
+    pristine = false;
+    const from = new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));
+    orbit = { from, dTheta: THREE.MathUtils.degToRad(degrees), r1: from.radius * distanceFactor, start: performance.now(), dur: Math.max(1, durationMs) };
+    requestRender();
+  };
+
+  const setInteractive = (on: boolean) => {
+    if (match) return;
+    controls.enabled = on;
+    canvas.style.pointerEvents = on ? "" : "none";
+    canvas.tabIndex = on ? 0 : -1;
+    if (!on && document.activeElement === canvas) canvas.blur();
+  };
+  setInteractive(opts.interactive !== false);
 
   /* ---------------------------------------------------------- resize */
   const resize = () => {
@@ -238,6 +306,7 @@ export function createViewer(container: HTMLElement, opts: ViewerOptions = {}): 
       const oldFov = camera.fov;
       camera.aspect = w / h;
       camera.fov = fovFor(camera.aspect);
+      if (shift[0] || shift[1]) camera.setViewOffset(w, h, -shift[0] * w, -shift[1] * h, w, h);
       camera.updateProjectionMatrix();
       if (pristine) {
         const fit = fitStart();
@@ -258,6 +327,7 @@ export function createViewer(container: HTMLElement, opts: ViewerOptions = {}): 
   /* ------------------------------------------------------ listeners */
   const onStart = () => {
     tween = null;
+    orbit = null;
     if (pristine) {
       pristine = false;
       opts.onInteract?.();
@@ -265,6 +335,11 @@ export function createViewer(container: HTMLElement, opts: ViewerOptions = {}): 
   };
   controls.addEventListener("start", onStart);
   controls.addEventListener("change", requestRender);
+  // A press cancels a scripted orbit even if it never becomes a drag (e.g. a vertical swipe the page takes over).
+  const onPointerDown = () => {
+    orbit = null;
+  };
+  canvas.addEventListener("pointerdown", onPointerDown);
   const detachKeys = attachKeyboard(
     canvas,
     controls,
@@ -303,7 +378,10 @@ export function createViewer(container: HTMLElement, opts: ViewerOptions = {}): 
   requestRender();
 
   return {
+    canvas,
     reset,
+    setInteractive,
+    orbitBy,
     stats() {
       let meshes = 0;
       building.traverse((o) => {
@@ -329,6 +407,8 @@ export function createViewer(container: HTMLElement, opts: ViewerOptions = {}): 
       canvas.removeEventListener("webglcontextrestored", onRestored);
       controls.removeEventListener("start", onStart);
       controls.removeEventListener("change", requestRender);
+      canvas.removeEventListener("pointerdown", onPointerDown);
+      canvas.removeEventListener("wheel", onWheelCapture, { capture: true });
       detachKeys();
       detachTap();
       controls.dispose();

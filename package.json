@@ -3,9 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/serve-site.mjs",
+    "start": "node scripts/serve-site.mjs",
     "build": "next build",
-    "start": "next start",
+    "build:viewer": "node scripts/build-viewer.mjs",
+    "dev:viewer": "next dev -p 3002",
+    "start:viewer": "next start -p 3002",
     "lint": "eslint"
   },
   "dependencies": {
@@ -20,8 +23,10 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/three": "0.181.0",
+    "esbuild": "^0.25.12",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
+    "serve-handler": "^6.1.8",
     "tailwindcss": "4.3.3",
     "typescript": "^5"
   }

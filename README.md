@@ -7,8 +7,8 @@ no external services, fonts or assets are needed to display it.
 
 ```bash
 npm install
-npm run dev                      # http://localhost:3000
-npm run build && npm start       # production build
+npm run dev:viewer               # http://localhost:3002
+npm run build && npm run start:viewer   # production build
 ```
 
 ## Using the viewer
@@ -114,3 +114,31 @@ only checked through the code path and a narrow desktop window), Safari and Fire
 - The ground is a shadow-only plane. By request, there is no grass, sky or other
   surroundings.
 - Interiors are simple boxes, there only to keep the windows from looking flat.
+
+## Website (`website/`)
+
+A static, framework-free homepage for **RB Residences** that uses the viewer above. Open
+`website/index.html` directly, or serve the folder with range requests (Safari needs them
+for video):
+
+```bash
+npm run dev                  # homepage on http://localhost:3000 (npm start does the same)
+npm run build:viewer         # rebuilds dist/viewer.js and copies it to website/js/viewer.js
+```
+
+| Path | Purpose |
+| --- | --- |
+| `website/js/data.js` | Everything that changes: brand, contact details, form endpoint, residences and their outlines, 3D camera settings |
+| `website/js/main.js` | Splash, hero video, header, building reveal, residence picker, cards, enquiry form |
+| `website/js/viewer.js` | Bundled viewer (IIFE, global `BuildingViewer`, Three.js included), loaded after the first scroll |
+| `website/css/styles.css` | Design tokens at the top, then the sections in page order |
+| `lib/viewer/embed.ts` | `mountViewer(container, options)` → `{ canvas, setInteractive, reset, orbitBy, dispose }` |
+
+The residence outlines and `viewer.view / fitMargin / viewShift` are measured against
+`assets/img/building-*.webp` (from `Building/Construction phases/09 - Finished villa 16x9 (crop).png`).
+Replace the picture and both must be measured again.
+
+Media were made with ffmpeg from `reference/hero-video compressed.mp4` (193 frames): a
+forward-then-backward loop (frames 0–192, then 191–1; 384 frames, 15.95 s), 1600×900 for
+landscape and a 1080² crop at x = 57 scaled to 720² for portrait (it keeps the whole building),
+plus WebP posters from the last frame.

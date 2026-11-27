@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Static website (plain scripts) and the bundled 3D viewer
+    "website/**",
+    "dist/**",
   ]),
 ]);
 
